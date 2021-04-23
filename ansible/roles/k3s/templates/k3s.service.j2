@@ -1,0 +1,37 @@
+[Unit]
+Description=Lightweight Kubernetes
+Documentation=https://k3s.io
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+
+{% if 'servers' in group_names %}
+
+ExecStart=/opt/k3s server --disable traefik --disable servicelb --disable-cloud-controller --disable local-storage --flannel-iface={{ k3s_private_interface }} --kubelet-arg="cloud-provider=external" --node-taint="node-role.kubernetes.io/master:NoSchedule"
+
+{% elif 'agents' in group_names %}
+
+ExecStart=/opt/k3s agent --server https://{{ hostvars['server-0'].ansible_all_ipv4_addresses | ipaddr(k3s_cluster_cidr) | first }}:6443 --flannel-iface={{ k3s_private_interface }} --kubelet-arg="cloud-provider=external" --token {{ k3s_token['content'] | b64decode | trim }}
+
+{% else %}
+
+ExecStart=/usr/bin/false
+
+{% endif %}
+
+KillMode=process
+Delegate=yes
+# Having non-zero Limit*s causes performance problems due to accounting overhead
+# in the kernel. We recommend using cgroups to do container-local accounting.
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

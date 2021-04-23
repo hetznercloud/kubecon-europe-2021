@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-kubecon
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-kubecon
+  template:
+    metadata:
+      labels:
+        app: hello-kubecon
+    spec:
+      containers:
+        - name: hello-kubernetes
+          image: paulbouwer/hello-kubernetes:1.10.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MESSAGE
+              value: "Hetzner Cloud says hello from KubeCon 2021"
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUBERNETES_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-kubecon
+  namespace: default
+  annotations:
+    load-balancer.hetzner.cloud/location: nbg1
+    load-balancer.hetzner.cloud/use-private-ip: "true"
+    load-balancer.hetzner.cloud/disable-private-ingress: "true"
+    load-balancer.hetzner.cloud/name: KubeCon
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: hello-kubecon
+  type: LoadBalancer
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: csi-demo
+  namespace: default
+spec:
+  containers:
+    - name: csi-demo
+      image: busybox
+      volumeMounts:
+        - mountPath: "/data"
+          name: kubecon
+      command: ["sleep", "1000000"]
+  volumes:
+    - name: kubecon
+      persistentVolumeClaim:
+        claimName: kubecon-volume
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubecon-volume
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: hcloud-volumes

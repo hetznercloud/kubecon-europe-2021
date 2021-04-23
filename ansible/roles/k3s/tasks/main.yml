@@ -1,0 +1,69 @@
+---
+- name: set_fact | figure out network device of private network
+  set_fact:
+    k3s_private_interface: "{{ hostvars[inventory_hostname]['ansible_' + item]['device'] }}"
+  when:
+    - hostvars[inventory_hostname]['ansible_' + item].ipv4 is defined
+    - hostvars[inventory_hostname]['ansible_' + item]['ipv4']['address'] | ipaddr(k3s_cluster_cidr)
+  with_items: "{{ ansible_interfaces }}"
+
+- name: get_url | download k3s
+  get_url:
+    url: "https://github.com/rancher/k3s/releases/download/{{ k3s_version }}/k3s"
+    dest: /opt/k3s
+    owner: root
+    group: root
+    mode: 0750
+    checksum: "sha256:https://github.com/rancher/k3s/releases/download/{{ k3s_version }}/sha256sum-amd64.txt"
+  notify:
+    - restart k3s
+
+- name: wait_for | wait for node-token to exist on server
+  delegate_to: "{{ groups['servers'][0] }}"
+  wait_for:
+    path: /var/lib/rancher/k3s/server/node-token
+    timeout: 900
+  when: "'agents' in group_names"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: slurp | get token for k3s agent
+  delegate_to: "{{ groups['servers'][0] }}"
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token
+  when: "'agents' in group_names"
+  ignore_errors: "{{ ansible_check_mode }}"
+  diff: false
+
+- name: template | configure systemd unit for k3s
+  template:
+    src: k3s.service.j2
+    dest: /etc/systemd/system/k3s.service
+    owner: root
+    group: root
+    mode: 0640
+  notify:
+    - restart k3s
+  ignore_errors: "{{ ansible_check_mode }}"
+  diff: "{{ 'server' in group_names }}"
+
+- name: flush_handlers | ensure k3s started at least once
+  meta: flush_handlers
+
+- name: template | deploy hcloud integrations
+  template:
+    src: "{{ item }}.j2"
+    dest: /var/lib/rancher/k3s/server/manifests/{{ item }}
+  with_items:
+    - hcloud-ccm-secret.yaml
+    - hcloud-csi-secret.yaml
+    - hcloud-ccm.yaml
+    - hcloud-csi.yaml
+  when: "'servers' in group_names"
+  diff: false
+
+- name: template | deploy demo deployment and service
+  template:
+    src: demo.yaml
+    dest: /var/lib/rancher/k3s/server/manifests/demo.yaml
+  when: "'servers' in group_names"

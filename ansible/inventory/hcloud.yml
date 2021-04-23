@@ -1,0 +1,4 @@
+plugin: hcloud
+groups:
+  servers: "'true' in labels['kubecon/server']"
+  agents: "'true' in labels['kubecon/agent']"

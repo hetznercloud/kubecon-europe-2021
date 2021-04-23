@@ -1,0 +1,7 @@
+- name: restart k3s
+  systemd:
+    name: k3s
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  ignore_errors: "{{ ansible_check_mode }}"

@@ -1,0 +1,15 @@
+---
+- name: Install Kubernetes
+  hosts: hcloud
+  strategy: free
+  roles:
+    - role: k3s
+      tags:
+        - k3s
+
+- name: Pull kubeconfig
+  hosts: localhost
+  roles:
+    - role: kubeconfig
+      tags:
+        - kubeconfig

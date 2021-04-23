@@ -1,0 +1,30 @@
+---
+- name: stat | check if kubeconfig exists
+  stat:
+    path: "{{ kubeconfig_local_path }}"
+  register: kubeconfig
+
+- name: fetch | download kubeconfig
+  delegate_to: "{{ groups['servers'][0] }}"
+  fetch:
+    flat: true
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ kubeconfig_local_path }}"
+  when: kubeconfig.stat.exists == false
+  diff: false
+
+- name: replace | fix ip in kubeconfig
+  when: kubeconfig.stat.exists == false
+  replace:
+    path: "{{ kubeconfig_local_path }}"
+    regexp: 'server: https://127\.0\.0\.1:6443'
+    replace: "server: https://{{ hostvars[groups['servers'][0]]['ansible_default_ipv4']['address'] }}:6443"
+  diff: false
+
+- name: replace | fix default name in kubeconfig
+  when: kubeconfig.stat.exists == false
+  replace:
+    path: "{{ kubeconfig_local_path }}"
+    regexp: "default"
+    replace: "kubecon"
+  diff: false
