@@ -41,6 +41,7 @@ terraform apply
 ```
 cd ../ansible
 pip install -r requirements.txt
+ansible-galaxy install -r requirements.yml
 ansible-playbook kubernetes.yml
 ```
 
@@ -49,6 +50,8 @@ ansible-playbook kubernetes.yml
 - [More About Hetzner Cloud](https://www.hetzner.com/cloud)
 - [Awesome hcloud](https://github.com/hetznercloud/awesome-hcloud)
 - [Hetzner Cloud Developer Hub](https://developers.hetzner.com/cloud)
+- [hcloud Documentation](https://docs.hetzner.com/cloud)
+- [hcloud API](https://docs.hetzner.cloud/)
 - [hcloud Terraform Provider](https://registry.terraform.io/providers/hetznercloud/hcloud/latest/docs)
 - [hcloud Ansible Collection](https://galaxy.ansible.com/hetzner/hcloud)
 - [hcloud Cloud Controller Manager](https://github.com/hetznercloud/hcloud-cloud-controller-manager)
