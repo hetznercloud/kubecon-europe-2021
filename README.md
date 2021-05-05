@@ -19,7 +19,7 @@ After the KubeCon this repository will not be updated or officially supported. I
 7. Clone the repository
 
 ```
-git clone ...
+git clone https://github.com/hetznercloud/kubecon-europe-2021.git
 cd kubecon-europe-2021
 ```
 
